@@ -10,7 +10,7 @@ angular.module('myApp.todoContainer', ['myApp.dragdrop'])
     templateUrl: 'todoContainer/todoContainer.html',
   };
 })
-.controller('todoCtrl', ['$scope', '$window', function($scope, $window) {
+.controller('todoCtrl', ['$scope', '$window', '$document', '$timeout', function($scope, $window, $document, $timeout) {
 //этот код работает с resize, но не работает с load and DOMContentLoaded!!!
 //   angular.element($window).on('resize', function () {
 //     $scope.getTodos();
@@ -34,10 +34,13 @@ angular.module('myApp.todoContainer', ['myApp.dragdrop'])
   
   $scope.send = function(text) {
     $scope.tasks.push(text);
-    $scope.saveTasksToLS(text);
+    // $scope.saveTodosToLS(text);
+    $scope.updateLS();
+    // $scope.updateLS();
   };
+  
+  $scope.todos= [];
 
-  $scope.todos;
   $scope.checkLS = function() {
     if($window.localStorage.getItem('todos') === null) {
       $scope.todos = [];
@@ -46,32 +49,59 @@ angular.module('myApp.todoContainer', ['myApp.dragdrop'])
     }
   };
 
-  $scope.saveTasksToLS = function(todo) {
+  $scope.saveTodosToLS = function(todo) {
     $scope.checkLS();
     $scope.todos.push(todo);
     $window.localStorage.setItem('todos', JSON.stringify($scope.todos));
   };
 
-  // this.todos.forEach(function(obj) {
-  //   document.getElementById(obj.container).appendChild(document.getElementById(obj.element));
-  // });
-
-  $scope.getTodos = function($document) {
+  $scope.getTodos = function() {
     $scope.checkLS();
-    var nodesArray = Array.prototype.slice.call($scope.tasks);
-
-  var nodesArray = nodesArray.filter( function(e) { 
-    return this.todos.map(function(d) { 
-      return d['element']; }).indexOf(e) === -1; 
-  }).forEach( function(e) { 
-    this.todos.push({'element':e.id, 'container': 'tasks'}); 
-  });
-  this.todos.forEach(function( obj ) {
-    $document.getElementById(obj.container).appendChild($document.getElementById(obj.element));
-    // $scope.todos.forEach(function(todo) {
-    //   $scope.tasks.push(todo);
+    $scope.todos.forEach(function(todo) {
+    $scope.tasks.push(todo);
     });
   };
+
+  $scope.updateLS = function() {
+    $scope.todosEl = angular.element($document).find('li');
+    $timeout(function() {
+      $scope.todosEl.forEach(todoEl => {
+        $scope.todos.push({
+          text: todoEl.innerText,
+          completed: todoEl.hasClass('done')
+        });
+    })}, 3000);
+
+      $window.localStorage.setItem('todos', JSON.stringify($scope.todos));
+  };
+
+ 
+  //   if ($window.localStorage.getItem('todos')) {
+  //     $scope.todosFromLocalStorage = JSON.parse($window.localStorage.getItem('todos'));
+  //     $scope.todos = $scope.todosFromLocalStorage.map(t => {
+  //       return {
+  //         id: t.id,
+  //       };
+  //     });
+  //   } else {
+  //     this.todos = [];
+  //   }
+  // };
+
+  // $scope.saveDataToLocalStorage = function(data, keyName) {
+  //   var a = [];
+  //   // Parse the serialized data back into an aray of objects
+  //   a = JSON.parse($window.localStorage.getItem(keyName)) || [];
+  //   // Push the new data (whether it be an object or anything else) onto the array
+  //   a.push(data);
+  //   // Re-serialize the array back into a string and store it in localStorage
+  //   $window.localStorage.setItem(keyName, JSON.stringify(a));
+  // };
+  // // $scope.getTodos = function() {
+  //   
+    
+    // 
+  // };
 
   $scope.removeFromLS = function(todo) {
     $scope.checkLS();
@@ -79,8 +109,6 @@ angular.module('myApp.todoContainer', ['myApp.dragdrop'])
     $scope.todos.splice(index, 1);
     $window.localStorage.setItem('todos', JSON.stringify($scope.tasks));
   };
-
- 
 
   $scope.clean = function(e) {
     $scope.tasks = [];
@@ -93,11 +121,20 @@ angular.module('myApp.todoContainer', ['myApp.dragdrop'])
 };
   $scope.onDrop = function($data, array, el){
     array.unshift($data);
-    var indexEl = this.todos.map(function(d) { return d['element']; }).indexOf(el.id);
-    if (indexEl>-1)
-      this.todos.splice(indexEl, 1);
-      $window.localStorage.setItem('todos', JSON.stringify(this.todos));
+    $scope.existing = JSON.parse($window.localStorage.getItem('todos'));
+    $scope.todoIndex = $scope.existing.findIndex(t => t.id === id);
+    // Add new data to localStorage Array
+    $scope.existing[$scope.todoIndex].name = $data;
+    // Save back to localStorage
+    $window.localStorage.setItem('todos', JSON.stringify($scope.existing));
+    // Get Updated Tasks
+    $scope.getTasks();
   };
+  //   var indexEl = $scope.todos.map(function(d) { return d['element']; }).indexOf(el.id);
+  //   if (indexEl>-1)
+  //     $scope.todos.splice(indexEl, 1);
+  //     $window.localStorage.setItem('todos', JSON.stringify($scope.todos));
+  // };
 }])
 
 .directive('autoScroll', function () {
